@@ -12,6 +12,9 @@ const uri = process.env.MONGODB_URI;
 
 const app = express();
 
+// const fs = require('fs');
+// const path = require('path');
+
 const cors = require('cors')
 const port = process.env.PORT;
 
@@ -40,9 +43,20 @@ run().catch(console.dir);
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.send('db')
-})
+const data = require('./data/db.json');
+
+app.get('/api/doctors', (req, res) => {
+    res.send(data);
+});
+
+app.get('/api/doctors/:id', (req, res) => {
+
+    const id = req.params.id;
+    console.log(id)
+    const doc = data.find(d => d.id === id);
+    console.log(doc)
+    res.send(doc);
+});
 
 app.listen(port, () => {
     console.log(`server is running on port ${port}`);
