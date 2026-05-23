@@ -38,7 +38,7 @@ async function run() {
     console.log('server',newAppointment)
     const result = await appointments.insertOne(newAppointment);
     res.json(result);
-})
+    })
 
     app.get('/api/appointments', async(req, res) => {
         const cursor = appointments.find();
