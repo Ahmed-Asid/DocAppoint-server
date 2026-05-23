@@ -12,11 +12,11 @@ const uri = process.env.MONGODB_URI;
 
 const app = express();
 
-// const fs = require('fs');
-// const path = require('path');
-
 const cors = require('cors')
 const port = process.env.PORT;
+
+app.use(cors());
+app.use(express.json());
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -28,20 +28,31 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-    // Send a ping to confirm a successful connection
+
+    const db = client.db('doc-appoint');
+    const appointments = db.collection('appointments');
+
+    app.post('/api/appointments', async(req, res) => {
+    const newAppointment = req.body;
+    console.log('server',newAppointment)
+    const result = await appointments.insertOne(newAppointment);
+    res.json(result);
+})
+
+    app.get('/api/appointments', async(req, res) => {
+        const cursor = appointments.find();
+        const result = await cursor.toArray();
+        res.send(result);
+    })
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
+  } catch (error) {
+    console.log(error)
   }
 }
 run().catch(console.dir);
-
-app.use(cors());
-app.use(express.json());
 
 const data = require('./data/db.json');
 
@@ -57,6 +68,7 @@ app.get('/api/doctors/:id', (req, res) => {
     console.log(doc)
     res.send(doc);
 });
+
 
 app.listen(port, () => {
     console.log(`server is running on port ${port}`);
