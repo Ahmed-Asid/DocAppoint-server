@@ -4,7 +4,7 @@ dns.setServers(["8.8.8.8","8.8.4.4"]);
 const express = require('express');
 const dotenv = require('dotenv');
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 dotenv.config();
 
@@ -35,7 +35,6 @@ async function run() {
 
     app.post('/api/appointments', async(req, res) => {
     const newAppointment = req.body;
-    console.log('server',newAppointment)
     const result = await appointments.insertOne(newAppointment);
     res.json(result);
     })
@@ -44,6 +43,22 @@ async function run() {
         const cursor = appointments.find();
         const result = await cursor.toArray();
         res.send(result);
+    })
+
+    app.delete('/api/appointments/:id', async(req, res) => {
+        const id = req.params.id;
+        const query = {
+            _id : new ObjectId(id)
+        }
+        const result = await appointments.deleteOne(query);
+        res.send(result)
+    })
+
+    app.get('/api/appointments/:id', async(req, res) => {
+        const id = req.params.id;
+        const query = { userId: id }
+        const result = await appointments.find(query).toArray();
+        res.send(result)
     })
 
     await client.db("admin").command({ ping: 1 });
