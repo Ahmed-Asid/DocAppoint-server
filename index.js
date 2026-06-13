@@ -32,6 +32,32 @@ async function run() {
 
     const db = client.db('doc-appoint');
     const appointments = db.collection('appointments');
+    const users = db.collection('user');
+
+    app.get('/api/users', async(req, res) => {
+        const cursor = users.find();
+        const result = await cursor.toArray();
+        res.send(result);
+    })
+
+    app.get('/api/users/:id', async(req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
+        const result = await users.find(query).toArray();
+        res.send(result)
+    })
+
+    app.patch('/api/users/:id', async(req,res) => {
+      const id = req.params.id;
+      const userData = req.body;
+
+      const result = await users.updateOne(
+        {_id: new ObjectId(id)},
+        {$set : userData}
+      )
+      res.send(result)
+    })
+
 
     app.post('/api/appointments', async(req, res) => {
     const newAppointment = req.body;
@@ -51,6 +77,17 @@ async function run() {
             _id : new ObjectId(id)
         }
         const result = await appointments.deleteOne(query);
+        res.send(result)
+    })
+
+    app.patch('/api/appointments/:id', async(req, res) => {
+        const id = req.params.id;
+        const updatedData = req.body;
+
+        const result = await appointments.updateOne(
+          {_id : new ObjectId(id)},
+          {$set : updatedData}
+        );
         res.send(result)
     })
 
