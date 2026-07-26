@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 });
 
 const JWKS = createRemoteJWKSet(
-  new URL("http://localhost:3000/api/auth/jwks")
+  new URL(`${process.env.SERVER_URL}/api/auth/jwks`)
 )
 
 const verifyToken = async(req, res, next) => {
@@ -43,26 +43,31 @@ const verifyToken = async(req, res, next) => {
     const {payload} = await jwtVerify(token, JWKS)
   console.log(payload)
   next()
-  } catch {
-    return res.status(403).json({ message: "Forbidden" })
-  }
+  } catch (err) {
+  console.log(err);
+  return res.status(403).json({
+    message: "Forbidden",
+    error: err.message,
+  });
+}
 }
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db('doc-appoint');
     const appointments = db.collection('appointments');
     const users = db.collection('user');
+    const doctors = db.collection('doctors');
 
-    app.get('/api/users', async(req, res) => {
+    app.get('/api/users', verifyToken, async(req, res) => {
         const cursor = users.find();
         const result = await cursor.toArray();
         res.send(result);
     })
 
-    app.get('/api/users/:id', async(req, res) => {
+    app.get('/api/users/:id', verifyToken, async(req, res) => {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
         const result = await users.find(query).toArray();
@@ -124,27 +129,34 @@ async function run() {
         res.send(result)
     })
 
-    await client.db("admin").command({ ping: 1 });
+    app.get('/api/doctors', async(req, res) => {
+      const cursor = doctors.find(
+        {},
+        {
+          projection: {
+            id:1, name:1, specialty:1, image:1, rating:1, reviews:1, location: 1
+          }
+        }
+      );
+      const result = await cursor.toArray()
+      res.send(result);
+    });
+
+    app.get('/api/doctors/:id', verifyToken, async(req, res) => {
+      const id = req.params.id;
+      const result = await doctors.findOne({id});
+      res.send(result)
+      console.log("doctor hello",result)
+    });
+
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } catch (error) {
     console.log(error)
   }
 }
+
 run().catch(console.dir);
-
-const data = require('./data/db.json');
-
-app.get('/api/doctors', (req, res) => {
-    res.send(data);
-});
-
-app.get('/api/doctors/:id', verifyToken,  async(req, res) => {
-
-    const id = req.params.id;
-    const doc = await data.find(d => d.id === id);
-    res.send(doc);
-});
-
 
 app.listen(port, () => {
     console.log(`server is running on port ${port}`);
